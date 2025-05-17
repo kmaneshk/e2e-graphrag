@@ -1,0 +1,82 @@
+# Dockerfile for GraphRAG Server
+# This is a multi-stage build that supports both Node.js and Python applications
+# Uncomment the appropriate sections based on the actual GraphRAG server requirements
+
+# -----------------------------------------------------
+# Node.js version - Uncomment if GraphRAG is Node.js based
+# -----------------------------------------------------
+FROM node:18-slim AS node-builder
+
+WORKDIR /app
+
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy source code
+COPY . .
+
+# Build if needed (uncomment if required)
+# RUN npm run build
+
+# -----------------------------------------------------
+# Python version - Uncomment if GraphRAG is Python based
+# -----------------------------------------------------
+FROM python:3.10-slim AS python-builder
+
+WORKDIR /app
+
+# Copy requirements file and install dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY . .
+
+# -----------------------------------------------------
+# Final stage - Choose the appropriate base image
+# -----------------------------------------------------
+# Uncomment ONE of these base images:
+FROM node:18-slim AS final
+# FROM python:3.10-slim AS final
+
+WORKDIR /app
+
+# Create a non-root user for security
+RUN groupadd -r -g 1001 graphrag && \
+    useradd -r -u 1001 -g 1001 -d /app -s /bin/bash graphrag && \
+    chown -R 1001:1001 /app
+
+# Create and set permissions for workspace directory
+RUN mkdir -p /workspace && \
+    chown -R 1001:1001 /workspace
+
+# Copy from the appropriate builder
+# Uncomment the appropriate COPY command:
+COPY --from=node-builder --chown=1001:1001 /app /app
+# COPY --from=python-builder --chown=1001:1001 /app /app
+
+# Expose the port used by the GraphRAG server
+EXPOSE 20213
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PYTHONUNBUFFERED=1
+# Add any other required environment variables here
+# Note: GRAPHRAG_API_KEY should be provided at runtime, not built into the image
+
+# Switch to non-root user
+USER graphrag
+
+# Set the workspace volume
+VOLUME /workspace
+
+# Set the healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:20213/healthz || exit 1
+
+# Start the application
+# Uncomment the appropriate command:
+CMD ["node", "server.js"]
+# CMD ["python", "app.py"]
+# CMD ["gunicorn", "-b", "0.0.0.0:20213", "app:app"]

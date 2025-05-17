@@ -18,11 +18,13 @@ spec:
       securityContext:
         # Security hardening as per README section 8
         runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
       containers:
       - name: graphrag-server
         # TODO: Replace with actual GraphRAG image
-        image: graphrag/graphrag:latest
-        imagePullPolicy: IfNotPresent
+        image: graphrag-server:v2.2.1
+        imagePullPolicy: Never
         ports:
         - containerPort: 20213
           name: http

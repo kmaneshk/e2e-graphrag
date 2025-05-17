@@ -1,0 +1,14 @@
+# Temporary build directories
+graphrag_build_temp_*
+*_graphrag_build_temp_*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Docker build context
+.docker-build-context/
+
+# GraphRAG submodule directory (if not tracking with git)
+# Uncomment the following line if you don't want to track the submodule with git
+# graphrag-repo/

@@ -41,6 +41,8 @@ spec:
       securityContext:
         # Security hardening as per README section 8
         runAsNonRoot: true
+        runAsUser: 7474
+        fsGroup: 7474
       containers:
       - name: neo4j
         # Using Neo4j community edition
