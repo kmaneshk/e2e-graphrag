@@ -139,7 +139,7 @@ If you prefer to deploy manually or understand the steps involved:
 You can run the `local-deployment.sh` script directly from GitHub without cloning the repository:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/microsoft/graphrag/main/k8s/kotaemon-graphrag/local-deployment.sh)
+bash <(curl -s https://raw.githubusercontent.com/kmaneshk/e2e-graphrag/local-deployment.sh)
 ```
 *(Note: Ensure the URL points to the correct script location if it differs.)*
 
