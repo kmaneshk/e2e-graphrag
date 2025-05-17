@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kotaemon-graphrag-ingress
+  namespace: graphrag-kotaemon-ui
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts: 
+    - kotaemon.example.com
+    secretName: kotaemon-tls
+  - hosts: 
+    - graphrag.example.com
+    secretName: graphrag-tls
+  rules:
+  - host: kotaemon.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kotaemon-ui
+            port:
+              number: 80
+  - host: graphrag.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: graphrag-server
+            port:
+              number: 20213

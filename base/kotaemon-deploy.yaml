@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kotaemon-ui
+  namespace: graphrag-kotaemon-ui
+  labels:
+    app: kotaemon-ui
+spec:
+  selector:
+    matchLabels:
+      app: kotaemon-ui
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kotaemon-ui
+    spec:
+      securityContext:
+        # Security hardening as per README section 8
+        runAsNonRoot: true
+      containers:
+      - name: kotaemon-ui
+        # TODO: Replace with actual Kotaemon UI image
+        image: nginx:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: http
+        securityContext:
+          # Security hardening as per README section 8
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+            - NET_RAW
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        # Optional: Mount OPENAI_API_KEY from secret (see README section 2)
+        # Uncomment if using direct LLM calls from Kotaemon UI
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-key-secret
+              key: key
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5

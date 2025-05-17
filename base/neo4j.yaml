@@ -1,0 +1,101 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  namespace: graphrag-kotaemon-ui
+  labels:
+    app: neo4j
+spec:
+  selector:
+    app: neo4j
+  ports:
+  - port: 7474
+    targetPort: 7474
+    protocol: TCP
+    name: http
+  - port: 7687
+    targetPort: 7687
+    protocol: TCP
+    name: bolt
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j
+  namespace: graphrag-kotaemon-ui
+  labels:
+    app: neo4j
+spec:
+  serviceName: neo4j
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      securityContext:
+        # Security hardening as per README section 8
+        runAsNonRoot: true
+      containers:
+      - name: neo4j
+        # Using Neo4j community edition
+        image: neo4j:5-community
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 7474
+          name: http
+        - containerPort: 7687
+          name: bolt
+        securityContext:
+          # Security hardening as per README section 8
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        # Neo4j authentication from secret (see README section 2)
+        env:
+        - name: NEO4J_AUTH
+          valueFrom:
+            secretKeyRef:
+              name: neo4j-credentials-secret
+              key: auth
+              # Expected format: neo4j/password
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        livenessProbe:
+          tcpSocket:
+            port: bolt
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: bolt
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      # IMPORTANT: This emptyDir should be replaced with volumeClaimTemplates for persistent storage
+      # in production, as specified in README.md Section 7
+      - name: data
+        emptyDir: {}
+  # For production, replace the above emptyDir with this volumeClaimTemplates section:
+  # volumeClaimTemplates:
+  # - metadata:
+  #     name: data
+  #   spec:
+  #     accessModes: ["ReadWriteOnce"]
+  #     resources:
+  #       requests:
+  #         storage: 10Gi

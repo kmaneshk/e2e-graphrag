@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - kotaemon-deploy.yaml
+  - kotaemon-svc.yaml
+  - graphrag-deploy.yaml
+  - graphrag-svc.yaml
+  - neo4j.yaml

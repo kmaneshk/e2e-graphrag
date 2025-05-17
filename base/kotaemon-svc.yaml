@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kotaemon-ui
+  namespace: graphrag-kotaemon-ui
+  labels:
+    app: kotaemon-ui
+spec:
+  selector:
+    app: kotaemon-ui
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  type: ClusterIP

@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kotaemon-graphrag-ingress
+  namespace: graphrag-kotaemon-ui
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: localhost
+    http:
+      paths:
+      - path: /rag-ui
+        pathType: Prefix
+        backend:
+          service:
+            name: kotaemon-ui
+            port:
+              number: 80
+  - host: localhost
+    http:
+      paths:
+      - path: /graphrag
+        pathType: Prefix
+        backend:
+          service:
+            name: graphrag-server
+            port:
+              number: 20213

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphrag-server
+  namespace: graphrag-kotaemon-ui
+  labels:
+    app: graphrag-server
+spec:
+  selector:
+    matchLabels:
+      app: graphrag-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: graphrag-server
+    spec:
+      securityContext:
+        # Security hardening as per README section 8
+        runAsNonRoot: true
+      containers:
+      - name: graphrag-server
+        # TODO: Replace with actual GraphRAG image
+        image: graphrag/graphrag:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 20213
+          name: http
+        securityContext:
+          # Security hardening as per README section 8
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+            - NET_RAW
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        # Mandatory: Mount GRAPHRAG_API_KEY from secret (see README section 2)
+        env:
+        - name: GRAPHRAG_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-api-key-secret
+              key: key
+        # Optional: Additional environment variables (see README section 2)
+        # Uncomment and modify as needed
+        # - name: GRAPHRAG_EMBEDDING_MODEL
+        #   value: "text-embedding-ada-002"
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: workspace
+        # TODO: Replace with PVC for persistence (see README section 6)
+        # For initial setup, using emptyDir
+        emptyDir: {}
+        # For persistence, use PVC:
+        # persistentVolumeClaim:
+        #   claimName: graphrag-workspace-pvc
