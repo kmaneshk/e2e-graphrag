@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  kotaemon-ui:
+    image: nginx:latest
+    container_name: kotaemon-ui
+    ports:
+      - "80:80"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    # Equivalent to runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false, capabilities: drop: [ALL]
+    # Note: nginx official image runs as root by default. For non-root, a custom image or different base might be needed.
+    # This setup assumes default nginx behavior for simplicity, but for production, align with security contexts.
+    # user: "101:101" # Example UID/GID for nginx non-root, if image supports it
+    # read_only: true # This would make the container's root filesystem read-only
+    # cap_drop:
+    #   - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - graphrag_net
+
+  graphrag-server:
+    image: graphrag/graphrag:latest
+    container_name: graphrag-server
+    ports:
+      - "20213:20213"
+    environment:
+      - GRAPHRAG_API_KEY=${GRAPHRAG_API_KEY}
+      # - GRAPHRAG_EMBEDDING_MODEL=${GRAPHRAG_EMBEDDING_MODEL:-text-embedding-ada-002} # Optional
+    volumes:
+      - ./workspace:/workspace
+    # Equivalent to runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false, capabilities: drop: [ALL]
+    # Assuming graphrag/graphrag image can run as non-root. If not, this needs adjustment or image modification.
+    # user: "1000:1000" # Example non-root UID/GID
+    # read_only: true
+    # cap_drop:
+    #   - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:20213/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - neo4j
+    networks:
+      - graphrag_net
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: neo4j-db
+    ports:
+      - "7474:7474" # HTTP
+      - "7687:7687" # Bolt
+    environment:
+      - NEO4J_AUTH=${NEO4J_AUTH} # e.g., neo4j/yoursecurepassword
+    volumes:
+      - ./neo4j-data:/data
+    # Equivalent to runAsNonRoot: true, allowPrivilegeEscalation: false, capabilities: drop: [ALL]
+    # Neo4j official image handles user permissions internally.
+    # cap_drop:
+    #  - ALL
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "${NEO4J_USER:-neo4j}", "-p", "${NEO4J_PASSWORD}", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - graphrag_net
+
+volumes:
+  workspace:
+  neo4j-data:
+
+networks:
+  graphrag_net:
+    driver: bridge
